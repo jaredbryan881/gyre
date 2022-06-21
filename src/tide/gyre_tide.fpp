@@ -269,7 +269,7 @@ contains
                    w_i_nad = 0._WP
          
                    w_o_nad = 0._WP
-                   w_o_nad(2) = -(2*l+1)*eps_tide/sqrt(4._WP*PI)*c
+                   w_o_nad(2) = -(2*l+1)*eps_tide*c/sqrt(4._WP*PI)
          
                    ! Solve for the wave function
 
@@ -305,7 +305,7 @@ contains
                    w_i_sad = 0._WP
          
                    w_o_sad = 0._WP
-                   w_o_sad(1) = -(2*l+1)*eps_tide/sqrt(4._WP*PI)*c
+                   w_o_sad(1) = -(2*l+1)*eps_tide*c/sqrt(4._WP*PI)
          
                    ! Solve for the wave function
 

@@ -66,13 +66,20 @@ program gyre_orbit
   type(tide_par_t), allocatable  :: td_p(:)
   type(out_par_t)                :: ot_p
   class(model_t), pointer        :: ml => null()
-  integer                        :: n_or_p
-  real(WP), allocatable          :: a_dot(:)
-  real(WP), allocatable          :: e_dot(:)
-  real(WP), allocatable          :: o_dot(:)
-  real(WP), allocatable          :: J_dot(:)
-  integer                        :: i
+  real(WP), allocatable          :: a_dot(:,:,:,:)
+  real(WP), allocatable          :: e_dot(:,:,:,:)
+  real(WP), allocatable          :: o_dot(:,:,:,:)
+  real(WP), allocatable          :: J_dot(:,:,:,:)
   type(hgroup_t)                 :: hg
+
+  integer                        :: i
+  integer                        :: j
+  integer                        :: k
+  integer                        :: l
+  integer                        :: n_or_p
+  integer                        :: n_l
+  integer                        :: n_m
+  integer                        :: n_k
 
   ! Read command-line arguments
 
@@ -147,25 +154,35 @@ program gyre_orbit
 
   n_or_p = SIZE(or_p)
 
-  allocate(a_dot(n_or_p))
-  allocate(e_dot(n_or_p))
-  allocate(o_dot(n_or_p))
-  allocate(J_dot(n_or_p))
+  n_l = td_p(1)%l_max-1
+  n_m = 2*td_p(1)%l_max+1
+  n_k = (td_p(1)%k_max-td_p(1)%k_min)+1
+
+  allocate(a_dot(n_or_p, n_l, n_m, n_k))
+  allocate(e_dot(n_or_p, n_l, n_m, n_k))
+  allocate(o_dot(n_or_p, n_l, n_m, n_k))
+  allocate(J_dot(n_or_p, n_l, n_m, n_k))
 
   ! Loop over orbital parameters
 
   or_p_loop : do i = 1, n_or_p
 
-     ! Initialize the secular arrays
+    ! Initialize the secular arrays
 
-     a_dot(i) = 0._WP
-     e_dot(i) = 0._WP
-     o_dot(i) = 0._WP
-     J_dot(i) = 0._WP
+    md_l_loop: do j = 1, n_l
+      md_m_loop: do k = 1, n_m
+        md_k_loop: do l = 1, n_k
+          a_dot(i,j,k,l) = 0._WP
+          e_dot(i,j,k,l) = 0._WP
+          o_dot(i,j,k,l) = 0._WP
+          J_dot(i,j,k,l) = 0._WP
+        end do md_k_loop
+      end do md_m_loop
+    end do md_l_loop
 
-     ! Add in contributions from each tidal component
+    ! Add in contributions from each tidal component
 
-     call eval_tide(ml, process_wave, os_p(1), rt_p(1), nm_p(1), gr_p(1), or_p(i), td_p(1))
+    call eval_tide(ml, process_wave, os_p(1), rt_p(1), nm_p(1), gr_p(1), or_p(i), td_p(1))
 
   end do or_p_loop
 
@@ -286,16 +303,16 @@ contains
 
        gamma = ATAN2(AIMAG(F), REAL(F))
 
-       a_dot(i) = a_dot(i) + 4._WP*Omega_orb*(q/R_a)*(R_a)**(l+3)* &
+       a_dot(i,l-1,m+l+1,k+1) = 4._WP*Omega_orb*(q/R_a)*(R_a)**(l+3)* &
             kappa*abs(F)*sin(gamma)*secular_G_2(R_a, e, l, m, k)
 
-       e_dot(i) = e_dot(i) + 4._WP*Omega_orb*q*(R_a)**(l+3)* &
+       e_dot(i,l-1,m+l+1,k+1) = 4._WP*Omega_orb*q*(R_a)**(l+3)* &
             kappa*abs(F)*sin(gamma)*secular_G_3(R_a, e, l, m, k)
 
-       o_dot(i) = o_dot(i) + 4._WP*Omega_orb*q*(R_a)**(l+3)* &
+       o_dot(i,l-1,m+l+1,k+1) = 4._WP*Omega_orb*q*(R_a)**(l+3)* &
             kappa*abs(F)*cos(gamma)*secular_G_1(R_a, e, l, m, k)
 
-       J_dot(i) = J_dot(i) + 4._WP*Omega_orb*q**2/SQRT(R_a*(1+q))*(R_a)**(l+3)* &
+       J_dot(i,l-1,m+l+1,k+1) = 4._WP*Omega_orb*q**2/SQRT(R_a*(1+q))*(R_a)**(l+3)* &
             kappa*abs(F)*sin(gamma)*secular_G_4(R_a, e, l, m, k)
 
     endif
